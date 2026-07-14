@@ -1,0 +1,2252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web & Database Connectivity</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --bg2: #0f1629;
+    --bg3: #141c35;
+    --surface: #1a2340;
+    --surface2: #1e2a4a;
+    --mysql-color: #00c9a7;
+    --mysql-glow: rgba(0,201,167,0.3);
+    --sqlsrv-color: #e8742a;
+    --sqlsrv-glow: rgba(232,116,42,0.3);
+    --vsmysql-color: #ae75f5;
+    --vsmysql-glow: rgba(174,117,245,0.3);
+    --vssql-color: #f54f8c;
+    --vssql-glow: rgba(245,79,140,0.3);
+    --accent: #4a9eff;
+    --text: #e8edf5;
+    --text-dim: #8a9bb8;
+    --text-muted: #5a6b85;
+    --border: rgba(255,255,255,0.07);
+    --code-bg: #080d1a;
+    --success: #00d4a0;
+    --warning: #f5a623;
+    --error: #ff5252;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── ANIMATED BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(0,201,167,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(232,116,42,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 60% at 50% 50%, rgba(74,158,255,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Grid lines */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 14px 0 8px;
+    text-align: center;
+    position: relative;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(74,158,255,0.1);
+    border: 1px solid rgba(74,158,255,0.25);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+    animation: fadeInDown 0.6s ease both;
+  }
+
+  .hero-badge .dot {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  .hero h1 {
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    animation: fadeInUp 0.7s ease 0.1s both;
+  }
+
+  .hero h1 .line1 { display: block; color: var(--text); }
+  .hero h1 .line2 {
+    display: block;
+    background: linear-gradient(135deg, var(--mysql-color) 0%, var(--accent) 50%, var(--sqlsrv-color) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    font-size: 18px;
+    color: var(--text-dim);
+    margin-top: 20px;
+    font-weight: 400;
+    animation: fadeInUp 0.7s ease 0.2s both;
+  }
+
+  /* ── TAB SWITCHER ── */
+  .tab-switcher {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 48px 0 0;
+    animation: fadeInUp 0.7s ease 0.3s both;
+  }
+
+  .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 32px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tab-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .tab-btn.mysql::before { background: radial-gradient(circle at center, var(--mysql-glow), transparent 70%); }
+  .tab-btn.sqlsrv::before { background: radial-gradient(circle at center, var(--sqlsrv-glow), transparent 70%); }
+
+  .tab-btn.mysql.active {
+    border-color: var(--mysql-color);
+    color: var(--mysql-color);
+    box-shadow: 0 0 24px var(--mysql-glow), inset 0 0 24px rgba(0,201,167,0.05);
+  }
+
+  .tab-btn.sqlsrv.active {
+    border-color: var(--sqlsrv-color);
+    color: var(--sqlsrv-color);
+    box-shadow: 0 0 24px var(--sqlsrv-glow), inset 0 0 24px rgba(232,116,42,0.05);
+  }
+
+  .tab-btn.vsmysql.active {
+    border-color: var(--vsmysql-color) !important;
+    color: var(--vsmysql-color) !important;
+    box-shadow: 0 0 24px var(--vsmysql-glow), inset 0 0 24px rgba(174,117,245,0.05);
+  }
+
+  .tab-btn.vssql.active {
+    border-color: var(--vssql-color) !important;
+    color: var(--vssql-color) !important;
+    box-shadow: 0 0 24px var(--vssql-glow), inset 0 0 24px rgba(245,79,140,0.05);
+  }
+
+  .tab-btn:hover::before { opacity: 1; }
+  .tab-btn.mysql:hover { border-color: rgba(0,201,167,0.5); color: var(--mysql-color); }
+  .tab-btn.sqlsrv:hover { border-color: rgba(232,116,42,0.5); color: var(--sqlsrv-color); }
+
+  .tab-icon { font-size: 20px; }
+
+  /* ── TAB CONTENT ── */
+  .tab-panel { display: none; animation: fadeInUp 0.5s ease both; }
+  .tab-panel.active { display: block; }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    text-align: center;
+    padding: 2px 0 16px;
+  }
+
+  .section-tag {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .mysql .section-tag { background: rgba(0,201,167,0.15); color: var(--mysql-color); border: 1px solid rgba(0,201,167,0.3); }
+  .sqlsrv .section-tag { background: rgba(232,116,42,0.15); color: var(--sqlsrv-color); border: 1px solid rgba(232,116,42,0.3); }
+  .vsmysql .section-tag { background: rgba(174,117,245,0.15); color: var(--vsmysql-color); border: 1px solid rgba(174,117,245,0.3); }
+  .vssql .section-tag { background: rgba(245,79,140,0.15); color: var(--vssql-color); border: 1px solid rgba(245,79,140,0.3); }
+
+  .section-header h2 {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .section-header p {
+    color: var(--text-dim);
+    font-size: 16px;
+    margin-top: 10px;
+  }
+
+  /* ── STEPS ── */
+  .steps { padding-bottom: 80px; }
+
+  .step {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 0 24px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+
+  .step-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .step-num {
+    width: 72px;
+    height: 72px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .mysql-panel .step-num {
+    background: linear-gradient(135deg, rgba(0,201,167,0.2), rgba(0,201,167,0.05));
+    border: 1.5px solid rgba(0,201,167,0.4);
+    color: var(--mysql-color);
+    box-shadow: 0 0 20px rgba(0,201,167,0.1);
+  }
+
+  .sqlsrv-panel .step-num {
+    background: linear-gradient(135deg, rgba(232,116,42,0.2), rgba(232,116,42,0.05));
+    border: 1.5px solid rgba(232,116,42,0.4);
+    color: var(--sqlsrv-color);
+    box-shadow: 0 0 20px rgba(232,116,42,0.1);
+  }
+
+  .vsmysql-panel .step-num {
+    background: linear-gradient(135deg, rgba(174,117,245,0.2), rgba(174,117,245,0.05));
+    border: 1.5px solid rgba(174,117,245,0.4);
+    color: var(--vsmysql-color);
+    box-shadow: 0 0 20px rgba(174,117,245,0.1);
+  }
+
+  .vssql-panel .step-num {
+    background: linear-gradient(135deg, rgba(245,79,140,0.2), rgba(245,79,140,0.05));
+    border: 1.5px solid rgba(245,79,140,0.4);
+    color: var(--vssql-color);
+    box-shadow: 0 0 20px rgba(245,79,140,0.1);
+  }
+
+  .step-line {
+    width: 2px;
+    flex: 1;
+    min-height: 24px;
+    margin: 6px 0;
+  }
+
+  .mysql-panel .step-line { background: linear-gradient(to bottom, rgba(0,201,167,0.3), rgba(0,201,167,0.05)); }
+  .sqlsrv-panel .step-line { background: linear-gradient(to bottom, rgba(232,116,42,0.3), rgba(232,116,42,0.05)); }
+  .vsmysql-panel .step-line { background: linear-gradient(to bottom, rgba(174,117,245,0.3), rgba(174,117,245,0.05)); }
+  .vssql-panel .step-line { background: linear-gradient(to bottom, rgba(245,79,140,0.3), rgba(245,79,140,0.05)); }
+
+  .step-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .step-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+    border-radius: 3px 0 0 3px;
+  }
+
+  .mysql-panel .step-card::before { background: var(--mysql-color); }
+  .sqlsrv-panel .step-card::before { background: var(--sqlsrv-color); }
+  .vsmysql-panel .step-card::before { background: var(--vsmysql-color); }
+  .vssql-panel .step-card::before { background: var(--vssql-color); }
+
+  .step-card:hover {
+    border-color: rgba(255,255,255,0.12);
+    transform: translateX(4px);
+    background: var(--surface2);
+  }
+
+  .step-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .step-emoji { font-size: 22px; }
+
+  .step-desc {
+    color: var(--text-dim);
+    font-size: 14px;
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+
+  /* ── CODE BLOCK ── */
+  .code-wrap {
+    background: var(--code-bg);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 12px;
+  }
+
+  .code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.03);
+  }
+
+  .code-lang {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .code-dots { display: flex; gap: 6px; }
+  .code-dots span {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .code-dots span:nth-child(1) { background: #ff5f57; }
+  .code-dots span:nth-child(2) { background: #febc2e; }
+  .code-dots span:nth-child(3) { background: #28c840; }
+
+  .code-copy-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-muted);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .code-copy-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+  pre {
+    padding: 20px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    color: #c9d1e0;
+  }
+
+  .kw { color: #c792ea; }
+  .fn { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .cmt { color: #546e7a; font-style: italic; }
+  .var { color: #f78c6c; }
+  .num { color: #f78c6c; }
+  .op { color: #89ddff; }
+  .tag { color: #ff5370; }
+  .attr { color: #ffcb6b; }
+  .val { color: #c3e88d; }
+
+  /* ── VISUAL DIAGRAM ── */
+  .diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin: 24px 0;
+    text-align: center;
+  }
+
+  .diagram h3 {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+  }
+
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .flow-box {
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    min-width: 110px;
+    text-align: center;
+  }
+
+  .flow-arrow {
+    font-size: 18px;
+    color: var(--text-muted);
+  }
+
+  .mysql-panel .flow-box {
+    background: rgba(0,201,167,0.1);
+    border: 1px solid rgba(0,201,167,0.3);
+    color: var(--mysql-color);
+  }
+
+  .sqlsrv-panel .flow-box {
+    background: rgba(232,116,42,0.1);
+    border: 1px solid rgba(232,116,42,0.3);
+    color: var(--sqlsrv-color);
+  }
+
+  .vsmysql-panel .flow-box {
+    background: rgba(174,117,245,0.1);
+    border: 1px solid rgba(174,117,245,0.3);
+    color: var(--vsmysql-color);
+  }
+
+  .vssql-panel .flow-box {
+    background: rgba(245,79,140,0.1);
+    border: 1px solid rgba(245,79,140,0.3);
+    color: var(--vssql-color);
+  }
+
+  .flow-box.neutral {
+    background: rgba(74,158,255,0.1);
+    border: 1px solid rgba(74,158,255,0.3);
+    color: var(--accent);
+  }
+
+  /* ── INFO BOX ── */
+  .info-box {
+    display: flex;
+    gap: 14px;
+    padding: 16px 20px;
+    border-radius: 10px;
+    margin-top: 16px;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+
+  .info-box.tip {
+    background: rgba(0,212,160,0.08);
+    border: 1px solid rgba(0,212,160,0.2);
+    color: #a0f0d8;
+  }
+
+  .info-box.warn {
+    background: rgba(245,166,35,0.08);
+    border: 1px solid rgba(245,166,35,0.2);
+    color: #f5d08a;
+  }
+
+  .info-box.note {
+    background: rgba(74,158,255,0.08);
+    border: 1px solid rgba(74,158,255,0.2);
+    color: #a0c8ff;
+  }
+
+  .info-box .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+  /* ── CHECKLIST ── */
+  .checklist {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  .checklist li::before {
+    content: '→';
+    font-family: 'JetBrains Mono', monospace;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .mysql-panel .checklist li::before { color: var(--mysql-color); }
+  .sqlsrv-panel .checklist li::before { color: var(--sqlsrv-color); }
+  .vsmysql-panel .checklist li::before { color: var(--vsmysql-color); }
+  .vssql-panel .checklist li::before { color: var(--vssql-color); }
+
+  /* ── REQUIREMENT TABLE ── */
+  .req-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 14px;
+    font-size: 13px;
+  }
+
+  .req-table th {
+    text-align: left;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.04);
+    font-weight: 700;
+    letter-spacing: 1px;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .req-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  .req-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .badge-ok { color: var(--success); font-weight: 700; }
+  .badge-req { color: var(--warning); font-weight: 700; }
+
+  /* ── RESULT BOX ── */
+  .result-box {
+    border-radius: 10px;
+    padding: 18px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    margin-top: 14px;
+    line-height: 1.7;
+  }
+
+  .result-box.success {
+    background: rgba(0,212,160,0.07);
+    border: 1px solid rgba(0,212,160,0.2);
+    color: #7effd4;
+  }
+
+  .result-box.fail {
+    background: rgba(255,82,82,0.07);
+    border: 1px solid rgba(255,82,82,0.2);
+    color: #ff9090;
+  }
+
+  /* ── VISUAL ILLUSTRATION ── */
+  .visual-illustration {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    margin: 16px 0;
+    text-align: center;
+  }
+
+  .server-visual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .server-box {
+    padding: 20px 24px;
+    border-radius: 12px;
+    min-width: 140px;
+    text-align: center;
+  }
+
+  .server-box .srv-icon { font-size: 40px; display: block; margin-bottom: 10px; }
+  .server-box .srv-name { font-size: 12px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .server-box .srv-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  .srv-php { background: rgba(139,103,229,0.1); border: 1px solid rgba(139,103,229,0.3); color: #b39ddb; }
+  .srv-mysql { background: rgba(0,201,167,0.1); border: 1px solid rgba(0,201,167,0.3); color: var(--mysql-color); }
+  .srv-sqlsrv { background: rgba(232,116,42,0.1); border: 1px solid rgba(232,116,42,0.3); color: var(--sqlsrv-color); }
+  .srv-xampp { background: rgba(74,158,255,0.1); border: 1px solid rgba(74,158,255,0.3); color: var(--accent); }
+  .srv-vs { background: rgba(174,117,245,0.1); border: 1px solid rgba(174,117,245,0.3); color: var(--vsmysql-color); }
+  .srv-nuget { background: rgba(245,79,140,0.1); border: 1px solid rgba(245,79,140,0.3); color: var(--vssql-color); }
+  .srv-ef { background: rgba(74,158,255,0.15); border: 1px solid rgba(74,158,255,0.4); color: var(--accent); }
+
+  .conn-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .conn-line {
+    width: 60px;
+    height: 2px;
+    position: relative;
+  }
+
+  .mysql-panel .conn-line { background: linear-gradient(to right, rgba(0,201,167,0.5), var(--mysql-color)); }
+  .sqlsrv-panel .conn-line { background: linear-gradient(to right, rgba(232,116,42,0.5), var(--sqlsrv-color)); }
+  .vsmysql-panel .conn-line { background: linear-gradient(to right, rgba(174,117,245,0.5), var(--vsmysql-color)); }
+  .vssql-panel .conn-line { background: linear-gradient(to right, rgba(245,79,140,0.5), var(--vssql-color)); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.85); }
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    text-align: center;
+    padding: 48px 0;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  .footer strong { color: var(--text-dim); }
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: linear-gradient(to right, var(--mysql-color), var(--accent), var(--sqlsrv-color));
+    transition: width 0.3s ease;
+    z-index: 100;
+    width: 0%;
+  }
+
+  /* ── STICKY NAV ── */
+  .sticky-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(10,14,26,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 0;
+  }
+
+  .sticky-nav .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .nav-brand {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+  }
+
+  .nav-brand span { color: var(--accent); }
+
+  .nav-links {
+    display: flex;
+    gap: 6px;
+  }
+
+  .nav-pill {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    font-family: 'Syne', sans-serif;
+  }
+
+  .nav-pill.mysql-active { background: rgba(0,201,167,0.1); border-color: rgba(0,201,167,0.3); color: var(--mysql-color); }
+  .nav-pill.sqlsrv-active { background: rgba(232,116,42,0.1); border-color: rgba(232,116,42,0.3); color: var(--sqlsrv-color); }
+  .nav-pill.vsmysql-active { background: rgba(174,117,245,0.1); border-color: rgba(174,117,245,0.3); color: var(--vsmysql-color); }
+  .nav-pill.vssql-active { background: rgba(245,79,140,0.1); border-color: rgba(245,79,140,0.3); color: var(--vssql-color); }
+  .nav-pill:hover { color: var(--text); }
+
+  /* ── COMPARISON TABLE ── */
+  .compare-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 60px;
+  }
+
+  .compare-section h2 {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .cmp-cell {
+    padding: 14px 18px;
+    background: var(--bg2);
+    font-size: 13px;
+  }
+
+  .cmp-cell.header {
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.03);
+  }
+
+  .cmp-cell.mysql-cell { color: var(--mysql-color); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .cmp-cell.sqlsrv-cell { color: var(--sqlsrv-color); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .cmp-cell.label-cell { color: var(--text-dim); font-weight: 600; }
+
+  @media (max-width: 700px) {
+    .step { grid-template-columns: 48px 1fr; gap: 0 16px; }
+    .step-num { width: 48px; height: 48px; font-size: 16px; border-radius: 12px; }
+    .flow { gap: 6px; }
+    .flow-box { min-width: 80px; padding: 10px 14px; font-size: 11px; }
+    .compare-grid { grid-template-columns: 1fr; }
+    .server-visual { gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<nav class="sticky-nav">
+  <div class="container">
+    <div class="nav-brand"><span>Web</span> &amp; Database Connectivity</div>
+    <div class="nav-links">
+      <button class="nav-pill mysql-active" onclick="switchTab('mysql')">🐬 PHP+MySQL</button>
+      <button class="nav-pill" onclick="switchTab('sqlsrv')">🗄️ PHP+SQL Server</button>
+      <button class="nav-pill" onclick="switchTab('vsmysql')">💜 VS+MySQL</button>
+      <button class="nav-pill" onclick="switchTab('vssql')">💗 VS+SQL Server</button>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="container">
+    <div class="hero-badge"><span class="dot"></span> Full Step-by-Step Tutorial</div>
+
+
+
+    <div class="tab-switcher"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MYSQL PANEL
+═══════════════════════════════════════════ -->
+<div id="mysql-panel" class="tab-panel active mysql-panel">
+  <div class="container">
+
+    <div class="section-header mysql">
+      <div class="section-tag">MySQL Tutorial</div>
+      <h2>PHP + MySQL Connection</h2>
+      <p>Using MySQLi and PDO — the two official PHP extensions</p>
+    </div>
+
+    <!-- Architecture Diagram -->
+    <div class="diagram">
+      <h3>Connection Architecture</h3>
+      <div class="flow">
+        <div class="flow-box">Browser<br/><small style="font-weight:400;font-size:10px">User Request</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box neutral">Apache<br/><small style="font-weight:400;font-size:10px">Web Server</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">PHP Script<br/><small style="font-weight:400;font-size:10px">.php file</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">MySQLi/<br/>PDO<br/><small style="font-weight:400;font-size:10px">Extension</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">MySQL<br/>Server<br/><small style="font-weight:400;font-size:10px">Port 3306</small></div>
+      </div>
+    </div>
+
+    <div class="steps">
+
+      <!-- STEP 1 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">01</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">📦</span> Install XAMPP (Local Environment)</div>
+          <p class="step-desc">XAMPP provides Apache, PHP, and MySQL in a single installer. It's the fastest way to set up a PHP+MySQL local development environment on Windows.</p>
+
+          <div class="visual-illustration">
+            <div class="server-visual">
+              <div class="server-box srv-xampp">
+                <span class="srv-icon">📦</span>
+                <div class="srv-name">XAMPP</div>
+                <div class="srv-sub">v8.x Installer</div>
+              </div>
+              <div class="conn-arrow"><div class="conn-line"></div>includes</div>
+              <div class="server-box srv-php">
+                <span class="srv-icon">🐘</span>
+                <div class="srv-name">PHP 8.x</div>
+                <div class="srv-sub">+ MySQLi ext</div>
+              </div>
+              <div class="conn-arrow"><div class="conn-line"></div>+</div>
+              <div class="server-box srv-mysql">
+                <span class="srv-icon">🐬</span>
+                <div class="srv-name">MySQL 8.x</div>
+                <div class="srv-sub">Port: 3306</div>
+              </div>
+            </div>
+          </div>
+
+          <ul class="checklist">
+            <li>Download from <strong>https://www.apachefriends.org</strong></li>
+            <li>Install XAMPP and open the XAMPP Control Panel</li>
+            <li>Start <strong>Apache</strong> and <strong>MySQL</strong> modules</li>
+            <li>Open browser → <strong>http://localhost/phpmyadmin</strong></li>
+          </ul>
+
+          <div class="info-box tip">
+            <span class="icon">✅</span>
+            <span>MySQLi extension is <strong>enabled by default</strong> in XAMPP. No extra configuration needed.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">02</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🗃️</span> Create Database in phpMyAdmin</div>
+          <p class="step-desc">Create your test database using phpMyAdmin — the web-based MySQL management tool included in XAMPP.</p>
+          <ul class="checklist">
+            <li>Go to <strong>http://localhost/phpmyadmin</strong></li>
+            <li>Click <strong>"New"</strong> on the left sidebar</li>
+            <li>Enter database name: <code style="color:var(--mysql-color);background:rgba(0,201,167,0.1);padding:2px 8px;border-radius:4px">testdb</code></li>
+            <li>Select collation: <strong>utf8mb4_unicode_ci</strong> → Click <strong>Create</strong></li>
+          </ul>
+
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">SQL — Create via query</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="kw">CREATE DATABASE</span> testdb
+  <span class="kw">CHARACTER SET</span> utf8mb4
+  <span class="kw">COLLATE</span> utf8mb4_unicode_ci;
+
+<span class="kw">CREATE TABLE</span> users (
+  id     <span class="kw">INT</span> <span class="kw">AUTO_INCREMENT PRIMARY KEY</span>,
+  name   <span class="kw">VARCHAR</span>(<span class="num">100</span>),
+  email  <span class="kw">VARCHAR</span>(<span class="num">150</span>)
+);</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">03</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🔌</span> Method 1 — Connect Using MySQLi</div>
+          <p class="step-desc">MySQLi (MySQL Improved) is the procedural/OOP extension built into PHP. Fastest and simplest for MySQL-only projects.</p>
+
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">PHP — MySQLi Procedural</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="tag">&lt;?php</span>
+<span class="cmt">// ── Database credentials ──</span>
+<span class="var">$host</span>   <span class="op">=</span> <span class="str">"localhost"</span>;
+<span class="var">$user</span>   <span class="op">=</span> <span class="str">"root"</span>;
+<span class="var">$pass</span>   <span class="op">=</span> <span class="str">""</span>;         <span class="cmt">// XAMPP default: empty</span>
+<span class="var">$dbname</span> <span class="op">=</span> <span class="str">"testdb"</span>;
+
+<span class="cmt">// ── Create connection ──</span>
+<span class="var">$conn</span> <span class="op">=</span> <span class="fn">mysqli_connect</span>(<span class="var">$host</span>, <span class="var">$user</span>, <span class="var">$pass</span>, <span class="var">$dbname</span>);
+
+<span class="cmt">// ── Check connection ──</span>
+<span class="kw">if</span> (<span class="op">!</span><span class="var">$conn</span>) {
+    <span class="kw">die</span>(<span class="str">"❌ Connection failed: "</span> <span class="op">.</span> <span class="fn">mysqli_connect_error</span>());
+}
+
+<span class="kw">echo</span> <span class="str">"✅ Connected successfully to MySQL!"</span>;
+
+<span class="cmt">// ── Close connection ──</span>
+<span class="fn">mysqli_close</span>(<span class="var">$conn</span>);
+<span class="tag">?&gt;</span></pre>
+          </div>
+
+          <div class="result-box success">
+            ✅ Connected successfully to MySQL!
+          </div>
+          <div class="result-box fail" style="margin-top:8px">
+            ❌ Connection failed: Access denied for user 'root'@'localhost'
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">04</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🎯</span> Method 2 — Connect Using MySQLi OOP</div>
+          <p class="step-desc">Object-Oriented approach is cleaner and preferred for modern PHP development.</p>
+
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">PHP — MySQLi Object-Oriented</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="tag">&lt;?php</span>
+<span class="var">$conn</span> <span class="op">=</span> <span class="kw">new</span> <span class="fn">mysqli</span>(<span class="str">"localhost"</span>, <span class="str">"root"</span>, <span class="str">""</span>, <span class="str">"testdb"</span>);
+
+<span class="kw">if</span> (<span class="var">$conn</span><span class="op">-&gt;</span>connect_error) {
+    <span class="kw">die</span>(<span class="str">"❌ Failed: "</span> <span class="op">.</span> <span class="var">$conn</span><span class="op">-&gt;</span>connect_error);
+}
+
+<span class="kw">echo</span> <span class="str">"✅ OOP Connected to MySQL!"</span>;
+<span class="var">$conn</span><span class="op">-&gt;</span><span class="fn">close</span>();
+<span class="tag">?&gt;</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 5 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">05</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🛡️</span> Method 3 — Connect Using PDO (Recommended)</div>
+          <p class="step-desc">PDO (PHP Data Objects) is the most secure and flexible method. It supports multiple database drivers and prepared statements natively.</p>
+
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">PHP — PDO MySQL</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="tag">&lt;?php</span>
+<span class="var">$host</span>   <span class="op">=</span> <span class="str">"localhost"</span>;
+<span class="var">$dbname</span> <span class="op">=</span> <span class="str">"testdb"</span>;
+<span class="var">$user</span>   <span class="op">=</span> <span class="str">"root"</span>;
+<span class="var">$pass</span>   <span class="op">=</span> <span class="str">""</span>;
+
+<span class="kw">try</span> {
+    <span class="var">$dsn</span>  <span class="op">=</span> <span class="str">"mysql:host=<span class="var">$host</span>;dbname=<span class="var">$dbname</span>;charset=utf8mb4"</span>;
+    <span class="var">$pdo</span>  <span class="op">=</span> <span class="kw">new</span> <span class="fn">PDO</span>(<span class="var">$dsn</span>, <span class="var">$user</span>, <span class="var">$pass</span>);
+
+    <span class="cmt">// Set error mode to exception</span>
+    <span class="var">$pdo</span><span class="op">-&gt;</span><span class="fn">setAttribute</span>(PDO<span class="op">::</span>ATTR_ERRMODE,
+                     PDO<span class="op">::</span>ERRMODE_EXCEPTION);
+
+    <span class="kw">echo</span> <span class="str">"✅ PDO Connected to MySQL successfully!"</span>;
+
+} <span class="kw">catch</span> (<span class="fn">PDOException</span> <span class="var">$e</span>) {
+    <span class="kw">echo</span> <span class="str">"❌ Connection failed: "</span> <span class="op">.</span> <span class="var">$e</span><span class="op">-&gt;</span><span class="fn">getMessage</span>();
+}
+<span class="tag">?&gt;</span></pre>
+          </div>
+
+          <div class="info-box tip">
+            <span class="icon">💡</span>
+            <span>PDO supports MySQL, SQL Server, PostgreSQL, SQLite and more — switch databases by just changing the DSN string.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 6 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">06</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🚀</span> Run a Query After Connection</div>
+          <p class="step-desc">Once connected, run a SELECT query and display results.</p>
+
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">PHP — Query Example</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="tag">&lt;?php</span>
+<span class="var">$conn</span> <span class="op">=</span> <span class="kw">new</span> <span class="fn">mysqli</span>(<span class="str">"localhost"</span>, <span class="str">"root"</span>, <span class="str">""</span>, <span class="str">"testdb"</span>);
+
+<span class="var">$result</span> <span class="op">=</span> <span class="var">$conn</span><span class="op">-&gt;</span><span class="fn">query</span>(<span class="str">"SELECT * FROM users"</span>);
+
+<span class="kw">while</span> (<span class="var">$row</span> <span class="op">=</span> <span class="var">$result</span><span class="op">-&gt;</span><span class="fn">fetch_assoc</span>()) {
+    <span class="kw">echo</span> <span class="var">$row</span>[<span class="str">'name'</span>] <span class="op">.</span> <span class="str">" — "</span> <span class="op">.</span> <span class="var">$row</span>[<span class="str">'email'</span>] <span class="op">.</span> <span class="str">"&lt;br&gt;"</span>;
+}
+<span class="tag">?&gt;</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 7 — Troubleshooting -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">07</div>
+        </div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🔧</span> Common Errors &amp; Fixes</div>
+          <table class="req-table">
+            <thead><tr><th>Error</th><th>Cause</th><th>Fix</th></tr></thead>
+            <tbody>
+              <tr><td style="color:var(--error)">Access denied for user</td><td style="color:var(--text-dim)">Wrong password</td><td class="badge-ok">Check $pass — use "" for XAMPP</td></tr>
+              <tr><td style="color:var(--error)">Unknown database</td><td style="color:var(--text-dim)">DB doesn't exist</td><td class="badge-ok">Create DB in phpMyAdmin</td></tr>
+              <tr><td style="color:var(--error)">Connection refused</td><td style="color:var(--text-dim)">MySQL not running</td><td class="badge-ok">Start MySQL in XAMPP panel</td></tr>
+              <tr><td style="color:var(--error)">Call to undefined function mysqli_connect()</td><td style="color:var(--text-dim)">Extension disabled</td><td class="badge-ok">Enable extension=mysqli in php.ini</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- end steps -->
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SQL SERVER PANEL
+═══════════════════════════════════════════ -->
+<div id="sqlsrv-panel" class="tab-panel sqlsrv-panel">
+  <div class="container">
+
+    <div class="section-header sqlsrv">
+      <div class="section-tag">SQL Server Tutorial</div>
+      <h2>PHP + SQL Server Connection</h2>
+      <p>Using Microsoft's official sqlsrv driver for PHP on Windows</p>
+    </div>
+
+    <!-- Architecture Diagram -->
+    <div class="diagram">
+      <h3>Connection Architecture</h3>
+      <div class="flow">
+        <div class="flow-box">PHP Script<br/><small style="font-weight:400;font-size:10px">.php file</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">sqlsrv<br/>Extension<br/><small style="font-weight:400;font-size:10px">php_sqlsrv.dll</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box neutral">ODBC Driver<br/>17/18<br/><small style="font-weight:400;font-size:10px">Microsoft</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">SQL Server<br/><small style="font-weight:400;font-size:10px">Port 1433</small></div>
+      </div>
+    </div>
+
+    <div class="steps">
+
+      <!-- STEP 1 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">01</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🔍</span> Check Your PHP Version &amp; Thread Safety</div>
+          <p class="step-desc">Before downloading the driver, you must know your exact PHP version and whether it is Thread Safe (TS) or Non-Thread Safe (NTS).</p>
+
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">PHP — Check Version</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="cmt">// Create phpinfo.php in C:\xampp\htdocs\</span>
+<span class="tag">&lt;?php</span> <span class="fn">phpinfo</span>(); <span class="tag">?&gt;</span>
+
+<span class="cmt">// Then open: http://localhost/phpinfo.php
+// Look for:
+//   PHP Version → e.g., 8.2.12
+//   Thread Safety → enabled (TS) or disabled (NTS)
+//   Architecture → x64 or x86</span></pre>
+          </div>
+
+          <div class="info-box note">
+            <span class="icon">ℹ️</span>
+            <span>XAMPP typically uses <strong>Thread Safe (TS)</strong> with <strong>x64</strong>. Download the matching DLL accordingly.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">02</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">⬇️</span> Download Microsoft PHP Driver for SQL Server</div>
+          <p class="step-desc">Download the official Microsoft PHP driver DLL files from GitHub. Choose the version that matches your PHP installation.</p>
+
+          <div class="visual-illustration">
+            <div class="server-visual">
+              <div class="server-box srv-sqlsrv">
+                <span class="srv-icon">📥</span>
+                <div class="srv-name">GitHub Release</div>
+                <div class="srv-sub">microsoft/msphpsql</div>
+              </div>
+              <div class="conn-arrow"><div class="conn-line"></div>extract</div>
+              <div class="server-box srv-php">
+                <span class="srv-icon">📁</span>
+                <div class="srv-name">2 DLL Files</div>
+                <div class="srv-sub">sqlsrv + pdo_sqlsrv</div>
+              </div>
+              <div class="conn-arrow"><div class="conn-line"></div>copy to</div>
+              <div class="server-box srv-xampp">
+                <span class="srv-icon">📂</span>
+                <div class="srv-name">C:\xampp\</div>
+                <div class="srv-sub">php\ext\</div>
+              </div>
+            </div>
+          </div>
+
+          <table class="req-table" style="margin-top:16px">
+            <thead><tr><th>PHP Version</th><th>Thread Safe (XAMPP)</th><th>Non-Thread Safe</th></tr></thead>
+            <tbody>
+              <tr><td class="label-cell">PHP 8.1</td><td class="sqlsrv-cell">php_sqlsrv_81_ts_x64.dll</td><td class="sqlsrv-cell">php_sqlsrv_81_nts_x64.dll</td></tr>
+              <tr><td class="label-cell">PHP 8.2</td><td class="sqlsrv-cell">php_sqlsrv_82_ts_x64.dll</td><td class="sqlsrv-cell">php_sqlsrv_82_nts_x64.dll</td></tr>
+              <tr><td class="label-cell">PHP 8.3</td><td class="sqlsrv-cell">php_sqlsrv_83_ts_x64.dll</td><td class="sqlsrv-cell">php_sqlsrv_83_nts_x64.dll</td></tr>
+            </tbody>
+          </table>
+
+          <div class="info-box warn" style="margin-top:14px">
+            <span class="icon">⚠️</span>
+            <span>Download <strong>both</strong> files: <code>php_sqlsrv_8x_ts_x64.dll</code> AND <code>php_pdo_sqlsrv_8x_ts_x64.dll</code></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">03</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">📁</span> Copy DLL Files to PHP Extensions Folder</div>
+          <p class="step-desc">Place the downloaded DLL files in the PHP extensions directory so PHP can load them.</p>
+
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">Windows Explorer Path</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="cmt">Destination folder:</span>
+C:\xampp\php\ext\
+
+<span class="cmt">Copy these two files there:</span>
+  php_sqlsrv_82_ts_x64.dll
+  php_pdo_sqlsrv_82_ts_x64.dll
+
+<span class="cmt">Or using Command Prompt:</span>
+<span class="fn">copy</span> php_sqlsrv_82_ts_x64.dll     C:\xampp\php\ext\
+<span class="fn">copy</span> php_pdo_sqlsrv_82_ts_x64.dll C:\xampp\php\ext\</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">04</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">⚙️</span> Enable Extensions in php.ini</div>
+          <p class="step-desc">Edit the PHP configuration file to load the sqlsrv extension. Find and edit php.ini in your XAMPP folder.</p>
+
+          <ul class="checklist" style="margin-bottom:16px">
+            <li>Open <strong>C:\xampp\php\php.ini</strong> with Notepad or VS Code</li>
+            <li>Scroll to the bottom or search for <strong>[extension]</strong> section</li>
+            <li>Add the two lines shown below</li>
+            <li>Save the file</li>
+          </ul>
+
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">php.ini — Add Extensions</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="cmt">; Add at the end of php.ini
+; Change 82 to match your PHP version (81, 82, 83)</span>
+
+extension=php_sqlsrv_82_ts_x64.dll
+extension=php_pdo_sqlsrv_82_ts_x64.dll</pre>
+          </div>
+
+          <div class="info-box warn">
+            <span class="icon">⚠️</span>
+            <span>Make sure there is <strong>no semicolon (;)</strong> at the beginning of these lines. A semicolon means the line is commented out.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 5 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">05</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🔗</span> Install Microsoft ODBC Driver</div>
+          <p class="step-desc">The sqlsrv PHP extension requires Microsoft's ODBC Driver to be installed on Windows. It's a separate installer from Microsoft.</p>
+
+          <div class="visual-illustration">
+            <div class="server-visual">
+              <div class="server-box srv-php">
+                <span class="srv-icon">🐘</span>
+                <div class="srv-name">PHP sqlsrv</div>
+                <div class="srv-sub">Extension</div>
+              </div>
+              <div class="conn-arrow"><div class="conn-line"></div>requires</div>
+              <div class="server-box srv-sqlsrv">
+                <span class="srv-icon">🔗</span>
+                <div class="srv-name">ODBC Driver</div>
+                <div class="srv-sub">v17 or v18</div>
+              </div>
+              <div class="conn-arrow"><div class="conn-line"></div>connects</div>
+              <div class="server-box srv-xampp">
+                <span class="srv-icon">🗄️</span>
+                <div class="srv-name">SQL Server</div>
+                <div class="srv-sub">2016 / 2019 / 2022</div>
+              </div>
+            </div>
+          </div>
+
+          <ul class="checklist" style="margin-top:14px">
+            <li>Go to: <strong>learn.microsoft.com → ODBC Driver for SQL Server</strong></li>
+            <li>Download <strong>ODBC Driver 17</strong> or <strong>18</strong> for Windows x64</li>
+            <li>Run the <strong>.msi</strong> installer as Administrator</li>
+            <li>Verify: Open <strong>ODBC Data Source Administrator</strong> → Drivers tab</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- STEP 6 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">06</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🔄</span> Restart Apache &amp; Verify Extension</div>
+          <p class="step-desc">Restart Apache in the XAMPP Control Panel, then verify that sqlsrv loaded successfully.</p>
+
+          <ul class="checklist" style="margin-bottom:16px">
+            <li>Open <strong>XAMPP Control Panel</strong></li>
+            <li>Click <strong>Stop</strong> next to Apache, then click <strong>Start</strong></li>
+            <li>Create <code style="color:var(--sqlsrv-color);background:rgba(232,116,42,0.1);padding:2px 8px;border-radius:4px">phpinfo.php</code> and open in browser</li>
+            <li>Press <strong>Ctrl+F</strong> and search for <strong>"sqlsrv"</strong></li>
+          </ul>
+
+          <div class="result-box success">
+            sqlsrv support  →  enabled<br/>
+            Version         →  5.12.0
+          </div>
+
+          <div class="info-box note" style="margin-top:12px">
+            <span class="icon">ℹ️</span>
+            <span>If sqlsrv does not appear in phpinfo, check the XAMPP Apache error log at <strong>C:\xampp\apache\logs\error.log</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 7 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">07</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🔌</span> Method 1 — Connect Using sqlsrv_connect()</div>
+          <p class="step-desc">The native Microsoft sqlsrv extension provides <code style="color:var(--sqlsrv-color)">sqlsrv_connect()</code> for direct SQL Server connections.</p>
+
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">PHP — sqlsrv Extension</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="tag">&lt;?php</span>
+<span class="cmt">// ── Server and credentials ──</span>
+<span class="var">$serverName</span> <span class="op">=</span> <span class="str">"LPT5032"</span>;       <span class="cmt">// or ".\SQLEXPRESS"</span>
+<span class="var">$connOptions</span> <span class="op">=</span> [
+    <span class="str">"Database"</span>  <span class="op">=&gt;</span> <span class="str">"aplbanking"</span>,
+    <span class="str">"Uid"</span>       <span class="op">=&gt;</span> <span class="str">"sa"</span>,
+    <span class="str">"PWD"</span>       <span class="op">=&gt;</span> <span class="str">"Bitopi@1234"</span>
+];
+
+<span class="cmt">// ── Attempt connection ──</span>
+<span class="var">$conn</span> <span class="op">=</span> <span class="fn">sqlsrv_connect</span>(<span class="var">$serverName</span>, <span class="var">$connOptions</span>);
+
+<span class="kw">if</span> (<span class="var">$conn</span>) {
+    <span class="kw">echo</span> <span class="str">"✅ Connected to SQL Server successfully!"</span>;
+    <span class="fn">sqlsrv_close</span>(<span class="var">$conn</span>);
+} <span class="kw">else</span> {
+    <span class="kw">echo</span> <span class="str">"❌ Connection FAILED!&lt;br&gt;"</span>;
+    <span class="kw">foreach</span> (<span class="fn">sqlsrv_errors</span>() <span class="kw">as</span> <span class="var">$err</span>) {
+        <span class="kw">echo</span> <span class="str">"Code: "</span>    <span class="op">.</span> <span class="var">$err</span>[<span class="str">'code'</span>]    <span class="op">.</span> <span class="str">"&lt;br&gt;"</span>;
+        <span class="kw">echo</span> <span class="str">"Message: "</span> <span class="op">.</span> <span class="var">$err</span>[<span class="str">'message'</span>] <span class="op">.</span> <span class="str">"&lt;br&gt;"</span>;
+    }
+}
+<span class="tag">?&gt;</span></pre>
+          </div>
+
+          <div class="result-box success" style="margin-top:14px">
+            ✅ Connected to SQL Server successfully!
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 8 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">08</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🛡️</span> Method 2 — Connect Using PDO (Recommended)</div>
+          <p class="step-desc">PDO with the sqlsrv driver is the most portable and secure approach. Supports prepared statements to prevent SQL injection.</p>
+
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">PHP — PDO SQL Server</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="tag">&lt;?php</span>
+<span class="var">$server</span> <span class="op">=</span> <span class="str">"LPT5032"</span>;
+<span class="var">$db</span>     <span class="op">=</span> <span class="str">"aplbanking"</span>;
+<span class="var">$user</span>   <span class="op">=</span> <span class="str">"sa"</span>;
+<span class="var">$pass</span>   <span class="op">=</span> <span class="str">"Bitopi@1234"</span>;
+
+<span class="kw">try</span> {
+    <span class="var">$dsn</span> <span class="op">=</span> <span class="str">"sqlsrv:Server=<span class="var">$server</span>;Database=<span class="var">$db</span>"</span>;
+    <span class="var">$pdo</span> <span class="op">=</span> <span class="kw">new</span> <span class="fn">PDO</span>(<span class="var">$dsn</span>, <span class="var">$user</span>, <span class="var">$pass</span>);
+
+    <span class="var">$pdo</span><span class="op">-&gt;</span><span class="fn">setAttribute</span>(PDO<span class="op">::</span>ATTR_ERRMODE,
+                     PDO<span class="op">::</span>ERRMODE_EXCEPTION);
+
+    <span class="kw">echo</span> <span class="str">"✅ PDO connected to SQL Server!"</span>;
+
+} <span class="kw">catch</span> (<span class="fn">PDOException</span> <span class="var">$e</span>) {
+    <span class="kw">echo</span> <span class="str">"❌ Error: "</span> <span class="op">.</span> <span class="var">$e</span><span class="op">-&gt;</span><span class="fn">getMessage</span>();
+}
+<span class="tag">?&gt;</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 9 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">09</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🚀</span> Run a Query After Connection</div>
+          <p class="step-desc">Execute a SQL SELECT query against SQL Server and display the results.</p>
+
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">PHP — sqlsrv Query</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="tag">&lt;?php</span>
+<span class="var">$conn</span> <span class="op">=</span> <span class="fn">sqlsrv_connect</span>(<span class="str">"LPT5032"</span>, [
+    <span class="str">"Database"</span> <span class="op">=&gt;</span> <span class="str">"aplbanking"</span>,
+    <span class="str">"Uid"</span>      <span class="op">=&gt;</span> <span class="str">"sa"</span>,
+    <span class="str">"PWD"</span>      <span class="op">=&gt;</span> <span class="str">"Bitopi@1234"</span>
+]);
+
+<span class="var">$sql</span>    <span class="op">=</span> <span class="str">"SELECT TOP 10 * FROM dbo.Accounts"</span>;
+<span class="var">$result</span> <span class="op">=</span> <span class="fn">sqlsrv_query</span>(<span class="var">$conn</span>, <span class="var">$sql</span>);
+
+<span class="kw">while</span> (<span class="var">$row</span> <span class="op">=</span> <span class="fn">sqlsrv_fetch_array</span>(<span class="var">$result</span>, SQLSRV_FETCH_ASSOC)) {
+    <span class="kw">echo</span> <span class="var">$row</span>[<span class="str">'AccountNo'</span>] <span class="op">.</span> <span class="str">" — "</span> <span class="op">.</span>
+         <span class="var">$row</span>[<span class="str">'AccountName'</span>] <span class="op">.</span> <span class="str">"&lt;br&gt;"</span>;
+}
+<span class="fn">sqlsrv_free_stmt</span>(<span class="var">$result</span>);
+<span class="fn">sqlsrv_close</span>(<span class="var">$conn</span>);
+<span class="tag">?&gt;</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 10 — Troubleshooting -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">10</div>
+        </div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🔧</span> Common Errors &amp; Fixes</div>
+          <table class="req-table">
+            <thead><tr><th>Error</th><th>Cause</th><th>Fix</th></tr></thead>
+            <tbody>
+              <tr><td style="color:var(--error)">Call to undefined function sqlsrv_connect()</td><td style="color:var(--text-dim)">DLL not loaded</td><td class="badge-ok">Check php.ini extension lines</td></tr>
+              <tr><td style="color:var(--error)">Unable to connect: SQL Server not running</td><td style="color:var(--text-dim)">Service stopped</td><td class="badge-ok">Start SQL Server service</td></tr>
+              <tr><td style="color:var(--error)">Login failed for user 'sa'</td><td style="color:var(--text-dim)">SA disabled or wrong pwd</td><td class="badge-ok">Enable SA in SSMS → Security</td></tr>
+              <tr><td style="color:var(--error)">TCP/IP Provider, error 0</td><td style="color:var(--text-dim)">TCP/IP disabled</td><td class="badge-ok">SQL Server Config Manager → Enable TCP/IP</td></tr>
+              <tr><td style="color:var(--error)">ODBC Driver not found</td><td style="color:var(--text-dim)">ODBC not installed</td><td class="badge-ok">Install Microsoft ODBC Driver 17/18</td></tr>
+            </tbody>
+          </table>
+
+          <div class="info-box warn" style="margin-top:16px">
+            <span class="icon">🔐</span>
+            <span>Enable <strong>SQL Server Authentication</strong> in SSMS: Right-click Server → Properties → Security → Select "SQL Server and Windows Authentication mode" → Restart SQL Server service.</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end steps -->
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     VS + MYSQL PANEL
+═══════════════════════════════════════════ -->
+<div id="vsmysql-panel" class="tab-panel vsmysql-panel">
+  <div class="container">
+
+    <div class="section-header vsmysql">
+      <div class="section-tag">Visual Studio Tutorial</div>
+      <h2>Visual Studio + MySQL Connection</h2>
+      <p>Using MySQL Connector/NET and Entity Framework Core with C# .NET</p>
+    </div>
+
+    <!-- Architecture Diagram -->
+    <div class="diagram">
+      <h3>Connection Architecture</h3>
+      <div class="flow">
+        <div class="flow-box">C# App<br/><small style="font-weight:400;font-size:10px">WinForms/Console</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box neutral">ADO.NET<br/><small style="font-weight:400;font-size:10px">or EF Core</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">MySql.Data<br/>NuGet Pkg<br/><small style="font-weight:400;font-size:10px">Connector/NET</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">MySQL<br/>Server<br/><small style="font-weight:400;font-size:10px">Port 3306</small></div>
+      </div>
+    </div>
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-left"><div class="step-num">01</div><div class="step-line"></div></div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🛠️</span> Create a C# Project in Visual Studio</div>
+          <p class="step-desc">Open Visual Studio and create a new project. Any C# project type works — Console App, Windows Forms, or ASP.NET Core.</p>
+          <div class="visual-illustration">
+            <div class="server-visual">
+              <div class="server-box srv-vs">
+                <span class="srv-icon">💜</span>
+                <div class="srv-name">Visual Studio</div>
+                <div class="srv-sub">2019 / 2022</div>
+              </div>
+              <div class="conn-arrow"><div class="conn-line"></div>new project</div>
+              <div class="server-box srv-ef">
+                <span class="srv-icon">📋</span>
+                <div class="srv-name">C# Console</div>
+                <div class="srv-sub">or WinForms</div>
+              </div>
+              <div class="conn-arrow"><div class="conn-line"></div>targets</div>
+              <div class="server-box srv-vs">
+                <span class="srv-icon">🔷</span>
+                <div class="srv-name">.NET 6/7/8</div>
+                <div class="srv-sub">Framework</div>
+              </div>
+            </div>
+          </div>
+          <ul class="checklist">
+            <li>Open Visual Studio → <strong>Create a new project</strong></li>
+            <li>Select <strong>Console App (.NET 6 or later)</strong> or Windows Forms App</li>
+            <li>Name your project (e.g., <code style="color:var(--vsmysql-color);background:rgba(174,117,245,0.1);padding:2px 8px;border-radius:4px">MySqlDemo</code>)</li>
+            <li>Click <strong>Create</strong></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-num">02</div><div class="step-line"></div></div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">📦</span> Install MySQL NuGet Package</div>
+          <p class="step-desc">Install the official MySQL Connector/NET package via NuGet Package Manager. This gives your C# app the MySqlConnection class.</p>
+          <div class="visual-illustration">
+            <div class="server-visual">
+              <div class="server-box srv-nuget">
+                <span class="srv-icon">📦</span>
+                <div class="srv-name">NuGet</div>
+                <div class="srv-sub">Package Manager</div>
+              </div>
+              <div class="conn-arrow"><div class="conn-line"></div>installs</div>
+              <div class="server-box srv-mysql">
+                <span class="srv-icon">🐬</span>
+                <div class="srv-name">MySql.Data</div>
+                <div class="srv-sub">Connector/NET</div>
+              </div>
+              <div class="conn-arrow"><div class="conn-line"></div>or</div>
+              <div class="server-box srv-ef">
+                <span class="srv-icon">🌿</span>
+                <div class="srv-name">Pomelo.EF</div>
+                <div class="srv-sub">EF Core driver</div>
+              </div>
+            </div>
+          </div>
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">Package Manager Console</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="cmt">// Option A — Official Oracle Connector</span>
+Install-Package MySql.Data
+
+<span class="cmt">// Option B — Pomelo (recommended for EF Core)</span>
+Install-Package Pomelo.EntityFrameworkCore.MySql
+
+<span class="cmt">// Option C — via .NET CLI</span>
+dotnet add package MySql.Data</pre>
+          </div>
+          <div class="info-box tip">
+            <span class="icon">💡</span>
+            <span>Go to <strong>Tools → NuGet Package Manager → Package Manager Console</strong> in Visual Studio to run these commands.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-num">03</div><div class="step-line"></div></div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🔌</span> Method 1 — ADO.NET Connection (MySqlConnection)</div>
+          <p class="step-desc">ADO.NET is the low-level direct approach. Use <code style="color:var(--vsmysql-color)">MySqlConnection</code> from the MySql.Data package for full control over queries.</p>
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">C# — ADO.NET MySqlConnection</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="kw">using</span> MySql.Data.MySqlClient;
+
+<span class="kw">class</span> <span class="fn">Program</span>
+{
+    <span class="kw">static void</span> <span class="fn">Main</span>()
+    {
+        <span class="cmt">// ── Connection string ──</span>
+        <span class="kw">string</span> connStr <span class="op">=</span>
+            <span class="str">"Server=localhost;"</span>  <span class="op">+</span>
+            <span class="str">"Database=testdb;"</span>  <span class="op">+</span>
+            <span class="str">"Uid=root;"</span>         <span class="op">+</span>
+            <span class="str">"Pwd=;"</span>;             <span class="cmt">// XAMPP: empty password</span>
+
+        <span class="kw">using var</span> conn <span class="op">=</span> <span class="kw">new</span> <span class="fn">MySqlConnection</span>(connStr);
+
+        <span class="kw">try</span>
+        {
+            conn.<span class="fn">Open</span>();
+            Console.<span class="fn">WriteLine</span>(<span class="str">"✅ Connected to MySQL!"</span>);
+            Console.<span class="fn">WriteLine</span>(<span class="str">"Server: "</span> <span class="op">+</span> conn.ServerVersion);
+        }
+        <span class="kw">catch</span> (MySqlException ex)
+        {
+            Console.<span class="fn">WriteLine</span>(<span class="str">"❌ Error: "</span> <span class="op">+</span> ex.Message);
+        }
+    }
+}</pre>
+          </div>
+          <div class="result-box success">✅ Connected to MySQL!<br/>Server: 8.0.33</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-num">04</div><div class="step-line"></div></div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🚀</span> Run a SELECT Query with ADO.NET</div>
+          <p class="step-desc">After connecting, use <code style="color:var(--vsmysql-color)">MySqlCommand</code> and <code style="color:var(--vsmysql-color)">MySqlDataReader</code> to execute and read query results.</p>
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">C# — Execute Query</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="kw">using</span> MySql.Data.MySqlClient;
+
+<span class="kw">string</span> connStr <span class="op">=</span> <span class="str">"Server=localhost;Database=testdb;Uid=root;Pwd=;"</span>;
+
+<span class="kw">using var</span> conn <span class="op">=</span> <span class="kw">new</span> <span class="fn">MySqlConnection</span>(connStr);
+conn.<span class="fn">Open</span>();
+
+<span class="kw">string</span> sql <span class="op">=</span> <span class="str">"SELECT id, name, email FROM users"</span>;
+<span class="kw">using var</span> cmd    <span class="op">=</span> <span class="kw">new</span> <span class="fn">MySqlCommand</span>(sql, conn);
+<span class="kw">using var</span> reader <span class="op">=</span> cmd.<span class="fn">ExecuteReader</span>();
+
+<span class="kw">while</span> (reader.<span class="fn">Read</span>())
+{
+    Console.<span class="fn">WriteLine</span>(
+        <span class="var">$"</span><span class="str">ID: {reader["id"]}  Name: {reader["name"]}  Email: {reader["email"]}</span><span class="var">"</span>
+    );
+}
+
+<span class="cmt">// Parameterized INSERT (prevents SQL injection)</span>
+<span class="kw">string</span> insert <span class="op">=</span> <span class="str">"INSERT INTO users(name,email) VALUES(@name,@email)"</span>;
+<span class="kw">using var</span> ins <span class="op">=</span> <span class="kw">new</span> <span class="fn">MySqlCommand</span>(insert, conn);
+ins.Parameters.<span class="fn">AddWithValue</span>(<span class="str">"@name"</span>,  <span class="str">"Johirul Islam"</span>);
+ins.Parameters.<span class="fn">AddWithValue</span>(<span class="str">"@email"</span>, <span class="str">"johir@bitopi.com"</span>);
+ins.<span class="fn">ExecuteNonQuery</span>();
+Console.<span class="fn">WriteLine</span>(<span class="str">"✅ Row inserted!"</span>);</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-num">05</div><div class="step-line"></div></div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🌿</span> Method 2 — Entity Framework Core (Code-First)</div>
+          <p class="step-desc">EF Core is the modern ORM approach. Define your models as C# classes and let EF Core handle SQL automatically.</p>
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">C# — EF Core with MySQL (Pomelo)</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="cmt">// 1. Install packages first:</span>
+<span class="cmt">// Install-Package Pomelo.EntityFrameworkCore.MySql</span>
+<span class="cmt">// Install-Package Microsoft.EntityFrameworkCore.Tools</span>
+
+<span class="kw">using</span> Microsoft.EntityFrameworkCore;
+
+<span class="cmt">// ── Model ──</span>
+<span class="kw">public class</span> <span class="fn">User</span>
+{
+    <span class="kw">public int</span>    Id    { <span class="kw">get</span>; <span class="kw">set</span>; }
+    <span class="kw">public string</span> Name  { <span class="kw">get</span>; <span class="kw">set</span>; }
+    <span class="kw">public string</span> Email { <span class="kw">get</span>; <span class="kw">set</span>; }
+}
+
+<span class="cmt">// ── DbContext ──</span>
+<span class="kw">public class</span> <span class="fn">AppDbContext</span> : DbContext
+{
+    <span class="kw">public</span> DbSet&lt;User&gt; Users { <span class="kw">get</span>; <span class="kw">set</span>; }
+
+    <span class="kw">protected override void</span> <span class="fn">OnConfiguring</span>(DbContextOptionsBuilder opt)
+        <span class="op">=&gt;</span> opt.<span class="fn">UseMySql</span>(
+            <span class="str">"Server=localhost;Database=testdb;Uid=root;Pwd=;"</span>,
+            ServerVersion.<span class="fn">AutoDetect</span>(
+                <span class="str">"Server=localhost;Database=testdb;Uid=root;Pwd=;"</span>)
+        );
+}
+
+<span class="cmt">// ── Usage ──</span>
+<span class="kw">using var</span> db <span class="op">=</span> <span class="kw">new</span> <span class="fn">AppDbContext</span>();
+<span class="kw">var</span> users <span class="op">=</span> db.Users.<span class="fn">ToList</span>();
+users.<span class="fn">ForEach</span>(u <span class="op">=&gt;</span> Console.<span class="fn">WriteLine</span>(<span class="var">$"</span><span class="str">{u.Name} — {u.Email}</span><span class="var">"</span>));</pre>
+          </div>
+          <div class="info-box note">
+            <span class="icon">ℹ️</span>
+            <span>Run <code>Add-Migration InitialCreate</code> then <code>Update-Database</code> in Package Manager Console to create the database tables automatically.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-num">06</div><div class="step-line"></div></div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🔧</span> Common Errors &amp; Fixes</div>
+          <table class="req-table">
+            <thead><tr><th>Error</th><th>Cause</th><th>Fix</th></tr></thead>
+            <tbody>
+              <tr><td style="color:var(--error)">Unable to connect to MySQL host</td><td style="color:var(--text-dim)">MySQL not running</td><td class="badge-ok">Start MySQL in XAMPP panel</td></tr>
+              <tr><td style="color:var(--error)">Access denied for user root</td><td style="color:var(--text-dim)">Wrong password</td><td class="badge-ok">Use Pwd=; for XAMPP (empty)</td></tr>
+              <tr><td style="color:var(--error)">Could not find MySql.Data</td><td style="color:var(--text-dim)">NuGet not installed</td><td class="badge-ok">Install-Package MySql.Data</td></tr>
+              <tr><td style="color:var(--error)">Pomelo version conflict</td><td style="color:var(--text-dim)">EF Core mismatch</td><td class="badge-ok">Match EF Core and Pomelo versions</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     VS + SQL SERVER PANEL
+═══════════════════════════════════════════ -->
+<div id="vssql-panel" class="tab-panel vssql-panel">
+  <div class="container">
+
+    <div class="section-header vssql">
+      <div class="section-tag">Visual Studio Tutorial</div>
+      <h2>Visual Studio + SQL Server Connection</h2>
+      <p>Using SqlConnection (ADO.NET) and Entity Framework Core with C# .NET</p>
+    </div>
+
+    <!-- Architecture Diagram -->
+    <div class="diagram">
+      <h3>Connection Architecture</h3>
+      <div class="flow">
+        <div class="flow-box">C# App<br/><small style="font-weight:400;font-size:10px">Visual Studio</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box neutral">ADO.NET<br/><small style="font-weight:400;font-size:10px">SqlConnection</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">System.Data<br/>.SqlClient<br/><small style="font-weight:400;font-size:10px">Built-in .NET</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box">SQL Server<br/><small style="font-weight:400;font-size:10px">Port 1433</small></div>
+      </div>
+    </div>
+
+    <!-- Detailed Architecture SVG -->
+    <div class="diagram" style="margin-top:8px">
+      <h3>Detailed Layer Architecture</h3>
+      <svg viewBox="0 0 860 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:860px;height:auto">
+        <!-- Layer boxes -->
+        <rect x="10" y="60" width="130" height="100" rx="12" fill="rgba(174,117,245,0.1)" stroke="rgba(174,117,245,0.4)" stroke-width="1.5"/>
+        <text x="75" y="102" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#ae75f5" font-weight="700">💜 C# App</text>
+        <text x="75" y="120" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a6b99">Visual Studio</text>
+        <text x="75" y="138" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#7a6b99">.NET 6/7/8</text>
+
+        <path d="M142 110 L175 110" stroke="rgba(245,79,140,0.7)" stroke-width="2" marker-end="url(#arrowP)"/>
+        <text x="158" y="103" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#a0608a">calls</text>
+
+        <rect x="177" y="60" width="140" height="100" rx="12" fill="rgba(245,79,140,0.1)" stroke="rgba(245,79,140,0.4)" stroke-width="1.5"/>
+        <text x="247" y="99" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#f54f8c" font-weight="700">SqlConnection</text>
+        <text x="247" y="117" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#b06080">System.Data.</text>
+        <text x="247" y="133" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#b06080">SqlClient</text>
+        <text x="247" y="149" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#805070">Built-in .NET</text>
+
+        <path d="M319 110 L352 110" stroke="rgba(245,79,140,0.7)" stroke-width="2" marker-end="url(#arrowP)"/>
+        <text x="335" y="103" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#a0608a">TDS</text>
+
+        <rect x="354" y="40" width="150" height="140" rx="12" fill="rgba(74,158,255,0.08)" stroke="rgba(74,158,255,0.35)" stroke-width="1.5"/>
+        <text x="429" y="82" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#4a9eff" font-weight="700">Connection</text>
+        <text x="429" y="100" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#4a9eff" font-weight="700">String</text>
+        <text x="429" y="122" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#5a8ab8">Server=LPT5032;</text>
+        <text x="429" y="138" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#5a8ab8">Database=aplbanking;</text>
+        <text x="429" y="154" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#5a8ab8">User Id=sa;</text>
+        <text x="429" y="170" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#5a8ab8">Password=***;</text>
+
+        <path d="M506 110 L539 110" stroke="rgba(245,79,140,0.7)" stroke-width="2" marker-end="url(#arrowP)"/>
+        <text x="522" y="103" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#a0608a">TCP/IP</text>
+        <text x="522" y="120" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#a0608a">:1433</text>
+
+        <rect x="541" y="60" width="130" height="100" rx="12" fill="rgba(232,116,42,0.1)" stroke="rgba(232,116,42,0.4)" stroke-width="1.5"/>
+        <text x="606" y="99" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#e8742a" font-weight="700">🗄️ SQL Server</text>
+        <text x="606" y="117" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#906040">LPT5032</text>
+        <text x="606" y="133" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#906040">aplbanking</text>
+        <text x="606" y="149" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#705030">Port 1433</text>
+
+        <path d="M673 110 L706 110" stroke="rgba(245,79,140,0.7)" stroke-width="2" marker-end="url(#arrowP)"/>
+
+        <rect x="708" y="60" width="135" height="100" rx="12" fill="rgba(0,201,167,0.08)" stroke="rgba(0,201,167,0.3)" stroke-width="1.5"/>
+        <text x="775" y="99" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#00c9a7" font-weight="700">📊 DataSet /</text>
+        <text x="775" y="117" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11" fill="#00c9a7" font-weight="700">DataReader</text>
+        <text x="775" y="135" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#408a7a">SqlDataReader</text>
+        <text x="775" y="151" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#408a7a">SqlDataAdapter</text>
+
+        <!-- Title -->
+        <text x="430" y="26" text-anchor="middle" font-family="Syne,sans-serif" font-size="12" fill="#5a6b85" letter-spacing="2">ADO.NET STACK — VISUAL STUDIO → SQL SERVER</text>
+
+        <defs>
+          <marker id="arrowP" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="rgba(245,79,140,0.7)"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-left"><div class="step-num">01</div><div class="step-line"></div></div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🛠️</span> Create C# Project in Visual Studio</div>
+          <p class="step-desc">SQL Server connectivity is built into .NET via <code style="color:var(--vssql-color)">System.Data.SqlClient</code>. No extra driver needed for basic connection.</p>
+          <div class="visual-illustration">
+            <div class="server-visual">
+              <div class="server-box srv-vs">
+                <span class="srv-icon">💗</span>
+                <div class="srv-name">Visual Studio</div>
+                <div class="srv-sub">2019 / 2022</div>
+              </div>
+              <div class="conn-arrow"><div class="conn-line"></div>create</div>
+              <div class="server-box srv-ef">
+                <span class="srv-icon">🔷</span>
+                <div class="srv-name">.NET 6/7/8</div>
+                <div class="srv-sub">Console / WinForms</div>
+              </div>
+              <div class="conn-arrow"><div class="conn-line"></div>built-in</div>
+              <div class="server-box srv-nuget">
+                <span class="srv-icon">🔗</span>
+                <div class="srv-name">System.Data</div>
+                <div class="srv-sub">SqlClient</div>
+              </div>
+            </div>
+          </div>
+          <ul class="checklist">
+            <li>Open Visual Studio → <strong>File → New → Project</strong></li>
+            <li>Choose <strong>Console App</strong> or <strong>Windows Forms App</strong></li>
+            <li>Select <strong>.NET 6.0 or later</strong></li>
+            <li>For .NET Core projects: install <code style="color:var(--vssql-color);background:rgba(245,79,140,0.1);padding:2px 8px;border-radius:4px">Microsoft.Data.SqlClient</code> NuGet package</li>
+          </ul>
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">NuGet Package Manager Console</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="cmt">// For .NET Core / .NET 5+ (recommended)</span>
+Install-Package Microsoft.Data.SqlClient
+
+<span class="cmt">// For .NET Framework 4.x (built-in, no install needed)</span>
+<span class="cmt">// System.Data.SqlClient is already available</span>
+
+<span class="cmt">// Via .NET CLI</span>
+dotnet add package Microsoft.Data.SqlClient</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-num">02</div><div class="step-line"></div></div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🔗</span> Build the Connection String</div>
+          <p class="step-desc">The connection string is the most critical part. It tells SqlConnection where the server is, which database to use, and how to authenticate.</p>
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">C# — Connection String Formats</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="cmt">// ── SQL Server Authentication (username + password) ──</span>
+<span class="kw">string</span> connStr <span class="op">=</span>
+    <span class="str">"Server=LPT5032;"</span>        <span class="op">+</span>  <span class="cmt">// Server name or IP</span>
+    <span class="str">"Database=aplbanking;"</span>   <span class="op">+</span>  <span class="cmt">// Database name</span>
+    <span class="str">"User Id=sa;"</span>            <span class="op">+</span>  <span class="cmt">// SQL login</span>
+    <span class="str">"Password=Bitopi@1234;"</span> <span class="op">+</span>  <span class="cmt">// SQL password</span>
+    <span class="str">"TrustServerCertificate=True;"</span>;
+
+<span class="cmt">// ── Windows Authentication (no password needed) ──</span>
+<span class="kw">string</span> winAuth <span class="op">=</span>
+    <span class="str">"Server=LPT5032;"</span>        <span class="op">+</span>
+    <span class="str">"Database=aplbanking;"</span>   <span class="op">+</span>
+    <span class="str">"Integrated Security=True;"</span> <span class="op">+</span>
+    <span class="str">"TrustServerCertificate=True;"</span>;
+
+<span class="cmt">// ── Named Instance ──</span>
+<span class="kw">string</span> named <span class="op">=</span> <span class="str">"Server=LPT5032\\SQLEXPRESS;Database=aplbanking;..."</span>;
+
+<span class="cmt">// ── With port ──</span>
+<span class="kw">string</span> port <span class="op">=</span> <span class="str">"Server=LPT5032,1433;Database=aplbanking;..."</span>;</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-num">03</div><div class="step-line"></div></div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🔌</span> Method 1 — ADO.NET SqlConnection (Basic)</div>
+          <p class="step-desc">The classic way using <code style="color:var(--vssql-color)">SqlConnection</code> from System.Data.SqlClient. Works with .NET Framework and .NET Core.</p>
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">C# — SqlConnection (System.Data)</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="kw">using</span> System.Data.SqlClient; <span class="cmt">// .NET Framework</span>
+<span class="cmt">// OR: using Microsoft.Data.SqlClient; // .NET Core</span>
+
+<span class="kw">class</span> <span class="fn">Program</span>
+{
+    <span class="kw">static void</span> <span class="fn">Main</span>()
+    {
+        <span class="kw">string</span> connStr <span class="op">=</span>
+            <span class="str">"Server=LPT5032;"</span>               <span class="op">+</span>
+            <span class="str">"Database=aplbanking;"</span>          <span class="op">+</span>
+            <span class="str">"User Id=sa;"</span>                   <span class="op">+</span>
+            <span class="str">"Password=Bitopi@1234;"</span>        <span class="op">+</span>
+            <span class="str">"TrustServerCertificate=True;"</span>;
+
+        <span class="kw">using</span> (<span class="kw">var</span> conn <span class="op">=</span> <span class="kw">new</span> <span class="fn">SqlConnection</span>(connStr))
+        {
+            <span class="kw">try</span>
+            {
+                conn.<span class="fn">Open</span>();
+                Console.<span class="fn">WriteLine</span>(<span class="str">"✅ Connected to SQL Server!"</span>);
+                Console.<span class="fn">WriteLine</span>(<span class="str">"DB: "</span> <span class="op">+</span> conn.Database);
+                Console.<span class="fn">WriteLine</span>(<span class="str">"State: "</span> <span class="op">+</span> conn.State);
+            }
+            <span class="kw">catch</span> (SqlException ex)
+            {
+                Console.<span class="fn">WriteLine</span>(<span class="str">"❌ SQL Error: "</span> <span class="op">+</span> ex.Message);
+                Console.<span class="fn">WriteLine</span>(<span class="str">"Error Code: "</span> <span class="op">+</span> ex.Number);
+            }
+        } <span class="cmt">// auto-closes here</span>
+    }
+}</pre>
+          </div>
+          <div class="result-box success">
+            ✅ Connected to SQL Server!<br/>
+            DB: aplbanking<br/>
+            State: Open
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-num">04</div><div class="step-line"></div></div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🚀</span> Execute Queries with SqlCommand</div>
+          <p class="step-desc">Use <code style="color:var(--vssql-color)">SqlCommand</code> to run SELECT, INSERT, UPDATE, DELETE. Always use parameterized queries to prevent SQL injection.</p>
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">C# — SqlCommand + SqlDataReader</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="kw">using</span> Microsoft.Data.SqlClient;
+
+<span class="kw">string</span> connStr <span class="op">=</span> <span class="str">"Server=LPT5032;Database=aplbanking;User Id=sa;Password=Bitopi@1234;TrustServerCertificate=True;"</span>;
+
+<span class="kw">using var</span> conn <span class="op">=</span> <span class="kw">new</span> <span class="fn">SqlConnection</span>(connStr);
+conn.<span class="fn">Open</span>();
+
+<span class="cmt">// ── SELECT ──</span>
+<span class="kw">string</span> sql <span class="op">=</span> <span class="str">"SELECT TOP 5 AccountNo, AccountName FROM dbo.Accounts"</span>;
+<span class="kw">using var</span> cmd    <span class="op">=</span> <span class="kw">new</span> <span class="fn">SqlCommand</span>(sql, conn);
+<span class="kw">using var</span> reader <span class="op">=</span> cmd.<span class="fn">ExecuteReader</span>();
+
+<span class="kw">while</span> (reader.<span class="fn">Read</span>())
+{
+    Console.<span class="fn">WriteLine</span>(
+        <span class="var">$"</span><span class="str">{reader["AccountNo"]} — {reader["AccountName"]}</span><span class="var">"</span>
+    );
+}
+reader.<span class="fn">Close</span>();
+
+<span class="cmt">// ── INSERT with parameters (safe!) ──</span>
+<span class="kw">string</span> ins <span class="op">=</span> <span class="str">"INSERT INTO Accounts(AccountNo, AccountName) VALUES(@no, @name)"</span>;
+<span class="kw">using var</span> insCmd <span class="op">=</span> <span class="kw">new</span> <span class="fn">SqlCommand</span>(ins, conn);
+insCmd.Parameters.<span class="fn">AddWithValue</span>(<span class="str">"@no"</span>,   <span class="str">"ACC-001"</span>);
+insCmd.Parameters.<span class="fn">AddWithValue</span>(<span class="str">"@name"</span>, <span class="str">"Johirul Islam"</span>);
+<span class="kw">int</span> rows <span class="op">=</span> insCmd.<span class="fn">ExecuteNonQuery</span>();
+Console.<span class="fn">WriteLine</span>(<span class="var">$"</span><span class="str">{rows} row(s) inserted.</span><span class="var">"</span>);</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-num">05</div><div class="step-line"></div></div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🌿</span> Method 2 — Entity Framework Core (Code-First)</div>
+          <p class="step-desc">EF Core with SQL Server is the modern ORM approach for .NET — model your database as C# classes, write LINQ queries instead of raw SQL.</p>
+          <div class="code-wrap">
+            <div class="code-header">
+              <div class="code-dots"><span></span><span></span><span></span></div>
+              <span class="code-lang">C# — EF Core + SQL Server</span>
+              <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><span class="cmt">// Install packages:</span>
+<span class="cmt">// Install-Package Microsoft.EntityFrameworkCore.SqlServer</span>
+<span class="cmt">// Install-Package Microsoft.EntityFrameworkCore.Tools</span>
+
+<span class="kw">using</span> Microsoft.EntityFrameworkCore;
+
+<span class="cmt">// ── Model ──</span>
+<span class="kw">public class</span> <span class="fn">Account</span>
+{
+    <span class="kw">public int</span>    Id          { <span class="kw">get</span>; <span class="kw">set</span>; }
+    <span class="kw">public string</span> AccountNo   { <span class="kw">get</span>; <span class="kw">set</span>; }
+    <span class="kw">public string</span> AccountName { <span class="kw">get</span>; <span class="kw">set</span>; }
+}
+
+<span class="cmt">// ── DbContext ──</span>
+<span class="kw">public class</span> <span class="fn">BankContext</span> : DbContext
+{
+    <span class="kw">public</span> DbSet&lt;Account&gt; Accounts { <span class="kw">get</span>; <span class="kw">set</span>; }
+
+    <span class="kw">protected override void</span> <span class="fn">OnConfiguring</span>(DbContextOptionsBuilder opt)
+        <span class="op">=&gt;</span> opt.<span class="fn">UseSqlServer</span>(
+            <span class="str">"Server=LPT5032;Database=aplbanking;"</span> <span class="op">+</span>
+            <span class="str">"User Id=sa;Password=Bitopi@1234;"</span>    <span class="op">+</span>
+            <span class="str">"TrustServerCertificate=True;"</span>);
+}
+
+<span class="cmt">// ── LINQ Query Usage ──</span>
+<span class="kw">using var</span> db <span class="op">=</span> <span class="kw">new</span> <span class="fn">BankContext</span>();
+
+<span class="cmt">// Fetch all accounts</span>
+<span class="kw">var</span> accounts <span class="op">=</span> db.Accounts
+    .<span class="fn">Where</span>(a <span class="op">=&gt;</span> a.AccountName.<span class="fn">Contains</span>(<span class="str">"Johirul"</span>))
+    .<span class="fn">ToList</span>();
+
+accounts.<span class="fn">ForEach</span>(a <span class="op">=&gt;</span>
+    Console.<span class="fn">WriteLine</span>(<span class="var">$"</span><span class="str">{a.AccountNo}: {a.AccountName}</span><span class="var">"</span>));</pre>
+          </div>
+          <div class="info-box note">
+            <span class="icon">ℹ️</span>
+            <span>Run <code>Add-Migration InitDb</code> and <code>Update-Database</code> in Package Manager Console to auto-create SQL Server tables from your C# models.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-num">06</div><div class="step-line"></div></div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">⚙️</span> Enable SQL Server for Remote/Network Access</div>
+          <p class="step-desc">If Visual Studio is on a different machine than SQL Server, you must enable TCP/IP and the right authentication mode.</p>
+          <ul class="checklist">
+            <li>Open <strong>SQL Server Configuration Manager</strong></li>
+            <li>Go to <strong>SQL Server Network Configuration → Protocols for MSSQLSERVER</strong></li>
+            <li>Enable <strong>TCP/IP</strong> → Right-click → Enable → Restart SQL Server service</li>
+            <li>In SSMS: Right-click Server → <strong>Properties → Security</strong> → Select "SQL Server and Windows Authentication mode"</li>
+            <li>Enable <strong>sa</strong> login: Security → Logins → sa → Properties → Status → Login: Enabled</li>
+          </ul>
+          <div class="info-box warn">
+            <span class="icon">⚠️</span>
+            <span>After changing authentication mode or enabling SA, you must <strong>restart the SQL Server service</strong> for changes to take effect.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-num">07</div><div class="step-line"></div></div>
+        <div class="step-card">
+          <div class="step-title"><span class="step-emoji">🔧</span> Common Errors &amp; Fixes</div>
+          <table class="req-table">
+            <thead><tr><th>Error</th><th>Cause</th><th>Fix</th></tr></thead>
+            <tbody>
+              <tr><td style="color:var(--error)">A network-related error occurred</td><td style="color:var(--text-dim)">Server not reachable</td><td class="badge-ok">Check server name / enable TCP/IP</td></tr>
+              <tr><td style="color:var(--error)">Login failed for user 'sa'</td><td style="color:var(--text-dim)">SA disabled or wrong pwd</td><td class="badge-ok">Enable SA in SSMS, check password</td></tr>
+              <tr><td style="color:var(--error)">Cannot find SqlConnection</td><td style="color:var(--text-dim)">Wrong namespace</td><td class="badge-ok">Install Microsoft.Data.SqlClient NuGet</td></tr>
+              <tr><td style="color:var(--error)">SSL Certificate error</td><td style="color:var(--text-dim)">.NET 6+ strict SSL</td><td class="badge-ok">Add TrustServerCertificate=True</td></tr>
+              <tr><td style="color:var(--error)">Invalid object name 'dbo.X'</td><td style="color:var(--text-dim)">Wrong DB or schema</td><td class="badge-ok">Check Database= in connection string</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<div class="container">
+  <div class="compare-section">
+    <h2>🆚 All 4 Methods — Quick Reference</h2>
+    <div class="compare-grid" style="grid-template-columns:1fr 1fr 1fr 1fr">
+      <div class="cmp-cell header">Feature</div>
+      <div class="cmp-cell header" style="color:var(--mysql-color)">🐬 PHP + MySQL</div>
+      <div class="cmp-cell header" style="color:var(--sqlsrv-color)">🗄️ PHP + SQL Server</div>
+      <div class="cmp-cell header" style="color:var(--vsmysql-color)">💜 VS + MySQL</div>
+      <div class="cmp-cell header" style="color:var(--vssql-color)">💗 VS + SQL Server</div>
+
+      <div class="cmp-cell label-cell">Language</div>
+      <div class="cmp-cell mysql-cell">PHP</div>
+      <div class="cmp-cell sqlsrv-cell">PHP</div>
+      <div class="cmp-cell" style="color:var(--vsmysql-color);font-family:'JetBrains Mono',monospace;font-size:12px">C# / .NET</div>
+      <div class="cmp-cell" style="color:var(--vssql-color);font-family:'JetBrains Mono',monospace;font-size:12px">C# / .NET</div>
+
+      <div class="cmp-cell label-cell">Extension / Package</div>
+      <div class="cmp-cell mysql-cell">mysqli / PDO</div>
+      <div class="cmp-cell sqlsrv-cell">sqlsrv / PDO</div>
+      <div class="cmp-cell" style="color:var(--vsmysql-color);font-family:'JetBrains Mono',monospace;font-size:12px">MySql.Data NuGet</div>
+      <div class="cmp-cell" style="color:var(--vssql-color);font-family:'JetBrains Mono',monospace;font-size:12px">Microsoft.Data.SqlClient</div>
+
+      <div class="cmp-cell label-cell">Default Port</div>
+      <div class="cmp-cell mysql-cell">3306</div>
+      <div class="cmp-cell sqlsrv-cell">1433</div>
+      <div class="cmp-cell" style="color:var(--vsmysql-color);font-family:'JetBrains Mono',monospace;font-size:12px">3306</div>
+      <div class="cmp-cell" style="color:var(--vssql-color);font-family:'JetBrains Mono',monospace;font-size:12px">1433</div>
+
+      <div class="cmp-cell label-cell">Connect Class/Fn</div>
+      <div class="cmp-cell mysql-cell">mysqli_connect()</div>
+      <div class="cmp-cell sqlsrv-cell">sqlsrv_connect()</div>
+      <div class="cmp-cell" style="color:var(--vsmysql-color);font-family:'JetBrains Mono',monospace;font-size:12px">new MySqlConnection()</div>
+      <div class="cmp-cell" style="color:var(--vssql-color);font-family:'JetBrains Mono',monospace;font-size:12px">new SqlConnection()</div>
+
+      <div class="cmp-cell label-cell">ORM Support</div>
+      <div class="cmp-cell mysql-cell">PDO only</div>
+      <div class="cmp-cell sqlsrv-cell">PDO only</div>
+      <div class="cmp-cell" style="color:var(--vsmysql-color);font-family:'JetBrains Mono',monospace;font-size:12px">EF Core (Pomelo)</div>
+      <div class="cmp-cell" style="color:var(--vssql-color);font-family:'JetBrains Mono',monospace;font-size:12px">EF Core (built-in)</div>
+
+      <div class="cmp-cell label-cell">ODBC Required</div>
+      <div class="cmp-cell mysql-cell">No</div>
+      <div class="cmp-cell sqlsrv-cell">Yes (v17/18)</div>
+      <div class="cmp-cell" style="color:var(--vsmysql-color);font-family:'JetBrains Mono',monospace;font-size:12px">No</div>
+      <div class="cmp-cell" style="color:var(--vssql-color);font-family:'JetBrains Mono',monospace;font-size:12px">No</div>
+
+      <div class="cmp-cell label-cell">Best For</div>
+      <div class="cmp-cell mysql-cell">Web apps</div>
+      <div class="cmp-cell sqlsrv-cell">Enterprise web</div>
+      <div class="cmp-cell" style="color:var(--vsmysql-color);font-family:'JetBrains Mono',monospace;font-size:12px">Desktop / mobile</div>
+      <div class="cmp-cell" style="color:var(--vssql-color);font-family:'JetBrains Mono',monospace;font-size:12px">Enterprise desktop</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <strong>Web &amp; Database Connectivity</strong> — PHP &amp; Visual Studio · MySQL &amp; SQL Server<br/>
+    <span style="margin-top:6px;display:block">Johirul Islam, Part-Time Faculty &nbsp;·&nbsp; DBMS Lab &nbsp;·&nbsp; Section A, Section E &nbsp;·&nbsp; Sprint - 2026</span>
+  </div>
+</div>
+
+<script>
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-pill').forEach(p => {
+      p.classList.remove('mysql-active','sqlsrv-active','vsmysql-active','vssql-active');
+    });
+    const panel = document.getElementById(tab + '-panel');
+    if (panel) panel.classList.add('active');
+    const pillMap = { mysql: 0, sqlsrv: 1, vsmysql: 2, vssql: 3 };
+    const classMap = { mysql: 'mysql-active', sqlsrv: 'sqlsrv-active', vsmysql: 'vsmysql-active', vssql: 'vssql-active' };
+    const pills = document.querySelectorAll('.nav-pill');
+    if (pills[pillMap[tab]]) pills[pillMap[tab]].classList.add(classMap[tab]);
+  }
+
+  function copyCode(btn) {
+    const pre = btn.closest('.code-wrap').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 2000);
+    });
+  }
+
+  window.addEventListener('scroll', () => {
+    const doc = document.documentElement;
+    const pct = (doc.scrollTop / (doc.scrollHeight - doc.clientHeight)) * 100;
+    document.getElementById('progressBar').style.width = pct + '%';
+  });
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.opacity = '1';
+        e.target.style.transform = 'translateX(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.step-card').forEach(card => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(-16px)';
+    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease, background 0.3s, border-color 0.3s';
+    observer.observe(card);
+  });
+</script>
+</body>
+</html>
